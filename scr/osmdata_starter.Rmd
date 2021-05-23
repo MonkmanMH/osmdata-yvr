@@ -60,21 +60,38 @@ ggplot() +
 
 
 
-Alternatively, we can use the predefined name of Victoria
+Alternatively, we can use the predefined name of Victoria. As we shall see, this covers the City of Victoria, and not the entire region.
 
 ```{r}
 # use the name
 getbb("Victoria BC")
 
-
-
+# coastline
 yvr_bb_n <- getbb("Victoria BC") %>% 
   opq() %>% 
-  add_osm_feature(key = "highway", 
-                  value = c("motorway", "primary", "motorway_link", "primary_link")) %>%
+  add_osm_feature(key = "natural", 
+                  value = "coastline") %>% 
   osmdata_sf()
+
+# roads
+yvr_bb_r <- getbb("Victoria BC") %>% 
+  opq() %>% 
+  add_osm_feature(key = "highway") %>% 
+  osmdata_sf()
+```
+
+plot
+
+```{r}
   
-yvr_bb_n
+ggplot() + 
+  geom_sf(data = yvr_bb_n$osm_lines,
+          inherit.aes = FALSE,
+          colour = "blue") +
+  geom_sf(data = yvr_bb_r$osm_lines,
+          inherit.aes = FALSE,
+          colour = "black")
+
 ```
 
 
