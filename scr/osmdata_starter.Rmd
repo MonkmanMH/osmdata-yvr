@@ -1,0 +1,122 @@
+---
+title: "osmdata_starter"
+author: "Martin Monkman"
+date: "23/05/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# package load
+library(osmdata)
+library(sf)
+
+library(ggplot2)
+```
+
+
+## 1. bounding box
+
+{osmdata} function `opq()` to define the bounding box.
+
+```{r}
+# Victoria point
+vic_long = -123.3576
+vic_lat = 48.4262
+
+
+# Victoria CMA bounding box dimensions
+vic_long_e <- -123.25
+vic_long_w <- -123.5
+vic_lat_n <- 48.75
+vic_lat_s <- 48.2
+
+```
+
+
+Define the bounding box (note `c(xmin, ymin, xmax, ymax)` which equates to west-south-east-north sequence)
+
+Add map features using `add_osm_feature`
+
+* see https://docs.ropensci.org/osmdata/reference/available_features.html
+
+```{r}
+yvr_bb <- opq(bbox = c(vic_long_w, vic_lat_s, vic_long_e, vic_lat_n)) %>% 
+  add_osm_feature(key = "natural", 
+                  value = "coastline") %>% 
+  osmdata_sf()
+
+yvr_bb
+```
+
+
+```{r}
+ggplot() + 
+  geom_sf(data = yvr_bb$osm_lines,
+          inherit.aes = FALSE,
+          colour = "blue")
+```
+
+
+
+Alternatively, we can use the predefined name of Victoria
+
+```{r}
+# use the name
+getbb("Victoria BC")
+
+
+
+yvr_bb_n <- getbb("Victoria BC") %>% 
+  opq() %>% 
+  add_osm_feature(key = "highway", 
+                  value = c("motorway", "primary", "motorway_link", "primary_link")) %>%
+  osmdata_sf()
+  
+yvr_bb_n
+```
+
+
+
+
+
+#vic_basemap <- get_map(location=c(lon = vic_long, lat = #vic_lat), zoom=11, maptype = 'terrain-background', source = #'stamen')
+
+#ggmap(vic_basemap)
+
+
+
+vic_basemap <- get_map(location=c(lon = vic_long, lat = vic_lat), 
+                       zoom=13, 
+                       maptype = 'roadmap', 
+                       source = 'osm')
+
+ggmap(vic_basemap)
+
+
+
+# Define a function to fix the bbox to be in EPSG:3857
+ggmap_bbox <- function(map) {
+  if (!inherits(map, "ggmap")) stop("map must be a ggmap object")
+  # Extract the bounding box (in lat/lon) from the ggmap to a numeric vector, 
+  # and set the names to what sf::st_bbox expects:
+  map_bbox <- setNames(unlist(attr(map, "bb")), 
+                       c("ymin", "xmin", "ymax", "xmax"))
+  
+  # Coonvert the bbox to an sf polygon, transform it to 3857, 
+  # and convert back to a bbox (convoluted, but it works)
+  bbox_3005 <- st_bbox(st_transform(st_as_sfc(st_bbox(map_bbox, crs = 4326)), 3005))
+  
+  # Overwrite the bbox of the ggmap object with the transformed coordinates 
+  attr(map, "bb")$ll.lat <- bbox_3005["ymin"]
+  attr(map, "bb")$ll.lon <- bbox_3005["xmin"]
+  attr(map, "bb")$ur.lat <- bbox_3005["ymax"]
+  attr(map, "bb")$ur.lon <- bbox_3005["xmax"]
+  map
+}
+
+
+
+```
+
